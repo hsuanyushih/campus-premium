@@ -143,7 +143,7 @@
     <div class="card" aria-live="polite">
       <p id="d-name" class="card-name"></p>
       <p><span class="card-label">Median sale price:</span> <span id="d-median" class="card-value"></span></p>
-      <p class="card-label">Median price per 坪 (about 3.3 m²): <span id="d-ping" class="card-value"></span></p>
+      <p class="card-label">Median price per sq ft: <span id="d-ping" class="card-value"></span></p>
       <p id="d-ping-n" class="status"></p>
       <p class="card-label">Median days from listing to contract: <span id="d-dom" class="card-value"></span></p>
       <p id="d-dom-n" class="status"></p>
@@ -188,7 +188,6 @@
     (function () {
       var DATA_URL = 'data/college_town_home_sales.csv';
       var MIN_PRICE = 10000;
-      var SQFT_PER_PING = 35.5842; // 1 坪 = 3.3058 m² = 35.5842 sq ft
       var money = new Intl.NumberFormat('en-US', {
         style: 'currency', currency: 'USD', maximumFractionDigits: 0
       });
@@ -401,7 +400,7 @@
         var miles = under.map(function (p) { return p[0]; }).sort(function (a, b) { return a - b; });
 
         document.getElementById('b-area').textContent = areas.length
-          ? count.format(Math.round(median(areas))) + ' sq ft (' + count.format(Math.round(median(areas) / SQFT_PER_PING)) + ' 坪)'
+          ? count.format(Math.round(median(areas))) + ' sq ft'
           : 'not enough data';
         document.getElementById('b-beds').textContent = beds.length
           ? count.format(median(beds)) + ' bedrooms' : 'not enough data';
@@ -533,11 +532,11 @@
               (points[u] = points[u] || []).push([miles, price, r[cCol], beds, sqft > 0 ? sqft : 0]);
             }
 
-            // Price per 坪 (only where the living area is known and above 0),
+            // Price per sq ft (only where the living area is known and above 0),
             // and days from listing to contract (only where both dates are filled in)
             var st = extra[u] = extra[u] || { ping: [], dom: [] };
             var area = Number(String(r[aCol]).trim());
-            if (isFinite(area) && area > 0) { st.ping.push(price / (area / SQFT_PER_PING)); }
+            if (isFinite(area) && area > 0) { st.ping.push(price / area); }
             if (r[lCol] && r[kCol]) {
               st.dom.push(Math.round((Date.parse(r[kCol]) - Date.parse(r[lCol])) / 86400000));
             }
