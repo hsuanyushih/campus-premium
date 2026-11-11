@@ -104,6 +104,8 @@
     .card-name { font-weight: 600; }
     .card-label { color: var(--muted); }
     .card-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .plot { width: 100%; margin: 0.5rem 0 0.25rem; }
+    .plot canvas { display: block; }
     @media (max-width: 34rem) {
       ol.chart li { grid-template-columns: 1fr; }
     }
@@ -130,6 +132,13 @@
       <p><span class="card-label">Median sale price:</span> <span id="d-median" class="card-value"></span></p>
       <p id="d-n" class="status"></p>
     </div>
+
+    <h2>Sale price and distance to campus</h2>
+    <p class="status">Each dot is one sale. Across: straight-line miles to campus. Up: sale price.</p>
+    <div class="plot">
+      <canvas id="scatter" role="img" aria-label="Scatter plot of sale price against miles to campus for the selected university"></canvas>
+    </div>
+    <p id="scatter-note" class="status"></p>
 
     <h2>Median sale price by university</h2>
     <p id="error" class="error" hidden></p>
@@ -185,8 +194,87 @@
         document.getElementById('counts').textContent = '';
       }
 
+      // Nice round step (1, 2 or 5 times a power of ten) for axis ticks.
+      function niceStep(raw) {
+        var pow = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+        var f = raw / pow;
+        return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * pow;
+      }
+
+      // Draws one dot per sale: x = miles to campus, y = sale price.
+      // The price axis stops at the 99th percentile so a few extreme sales don't flatten the rest.
+      function drawScatter(name, pts) {
+        var canvas = document.getElementById('scatter');
+        var note = document.getElementById('scatter-note');
+        var cssW = Math.max(280, Math.min(canvas.parentNode.clientWidth, 900));
+        var cssH = Math.round(Math.max(280, cssW * 0.6));
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.round(cssW * dpr);
+        canvas.height = Math.round(cssH * dpr);
+        canvas.style.width = cssW + 'px';
+        canvas.style.height = cssH + 'px';
+        var ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, cssW, cssH);
+
+        var styles = getComputedStyle(document.documentElement);
+        var barColor = styles.getPropertyValue('--bar').trim();
+        var muted = styles.getPropertyValue('--muted').trim();
+        var rule = styles.getPropertyValue('--rule').trim();
+
+        var m = { l: 72, r: 12, t: 12, b: 40 };
+        var plotW = cssW - m.l - m.r, plotH = cssH - m.t - m.b;
+
+        var prices = pts.map(function (p) { return p[1]; }).sort(function (a, b) { return a - b; });
+        var yMax = prices.length ? prices[Math.floor((prices.length - 1) * 0.99)] : 1;
+        var xMax = pts.reduce(function (acc, p) { return Math.max(acc, p[0]); }, 0);
+        xMax = Math.max(1, Math.ceil(xMax));
+
+        function X(v) { return m.l + (v / xMax) * plotW; }
+        function Y(v) { return m.t + plotH - (v / yMax) * plotH; }
+
+        ctx.font = '12px system-ui, sans-serif';
+        ctx.lineWidth = 1;
+
+        // Y ticks and grid
+        var yStep = niceStep(yMax / 5);
+        ctx.fillStyle = muted; ctx.strokeStyle = rule;
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        for (var yv = 0; yv <= yMax; yv += yStep) {
+          var yy = Math.round(Y(yv)) + 0.5;
+          ctx.beginPath(); ctx.moveTo(m.l, yy); ctx.lineTo(m.l + plotW, yy); ctx.stroke();
+          ctx.fillText(money.format(yv), m.l - 6, yy);
+        }
+        // X ticks
+        var xStep = niceStep(xMax / 6);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        for (var xv = 0; xv <= xMax + 1e-9; xv += xStep) {
+          ctx.fillText(String(Math.round(xv * 10) / 10), X(xv), m.t + plotH + 6);
+        }
+        ctx.fillText('miles to campus', m.l + plotW / 2, m.t + plotH + 22);
+
+        // Dots
+        var shown = 0;
+        ctx.fillStyle = barColor;
+        ctx.globalAlpha = 0.35;
+        pts.forEach(function (p) {
+          if (p[1] > yMax) { return; }
+          shown++;
+          ctx.beginPath();
+          ctx.arc(X(p[0]), Y(p[1]), 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+
+        canvas.setAttribute('aria-label', 'Scatter plot of sale price against miles to campus for ' + name + ', ' + shown + ' sales shown');
+        var hidden = pts.length - shown;
+        note.textContent = 'Showing ' + count.format(shown) + ' of ' + count.format(pts.length) +
+          ' sales. The price axis stops at ' + money.format(Math.round(yMax)) + ' (99th percentile); ' +
+          count.format(hidden) + ' higher-priced sales are not drawn.';
+      }
+
       // Fills the university dropdown and the card above the chart. Defaults to UIUC.
-      function setupPicker(entries, byName) {
+      function setupPicker(entries, byName, points) {
         var select = document.getElementById('uni');
         var DEFAULT = 'University of Illinois Urbana-Champaign';
         var names = entries.map(function (e) { return e.name; }).sort();
@@ -201,13 +289,15 @@
           document.getElementById('d-name').textContent = e.name;
           document.getElementById('d-median').textContent = money.format(e.median);
           document.getElementById('d-n').textContent = count.format(e.n) + ' sales of $10,000 or more';
+          drawScatter(e.name, points[e.name] || []);
         }
         select.addEventListener('change', show);
+        window.addEventListener('resize', show);
         select.value = byName[DEFAULT] ? DEFAULT : names[0];
         show();
       }
 
-      function render(groups, totals) {
+      function render(groups, totals, points) {
         var list = document.getElementById('chart');
         var entries = Object.keys(groups).map(function (name) {
           var prices = groups[name].slice().sort(function (a, b) { return a - b; });
@@ -217,7 +307,7 @@
         var max = entries.length ? entries[0].median : 1;
         var byName = {};
         entries.forEach(function (e) { byName[e.name] = e; });
-        setupPicker(entries, byName);
+        setupPicker(entries, byName, points);
 
         entries.forEach(function (e) {
           var li = document.createElement('li');
@@ -267,9 +357,10 @@
           var header = rows.shift();
           var uCol = header.indexOf('university');
           var pCol = header.indexOf('sale_price');
-          if (uCol < 0 || pCol < 0) { throw new Error('Missing university or sale_price column'); }
+          var mCol = header.indexOf('miles_to_campus');
+          if (uCol < 0 || pCol < 0 || mCol < 0) { throw new Error('Missing a required column'); }
 
-          var groups = {}, totals = { rows: 0, excluded: 0, kept: 0 };
+          var groups = {}, points = {}, totals = { rows: 0, excluded: 0, kept: 0 };
           rows.forEach(function (r) {
             if (r.length < header.length) { return; }
             totals.rows++;
@@ -279,8 +370,10 @@
             totals.kept++;
             var u = r[uCol];
             (groups[u] = groups[u] || []).push(price);
+            var miles = Number(String(r[mCol]).trim());
+            if (isFinite(miles)) { (points[u] = points[u] || []).push([miles, price]); }
           });
-          render(groups, totals);
+          render(groups, totals, points);
         })
         .catch(function (err) {
           showError('Could not load the chart data (' + err.message + ').');
