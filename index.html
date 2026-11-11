@@ -140,6 +140,10 @@
     <div class="card" aria-live="polite">
       <p id="d-name" class="card-name"></p>
       <p><span class="card-label">Median sale price:</span> <span id="d-median" class="card-value"></span></p>
+      <p class="card-label">Median price per 坪 (about 3.3 m²): <span id="d-ping" class="card-value"></span></p>
+      <p id="d-ping-n" class="status"></p>
+      <p class="card-label">Median days from listing to contract: <span id="d-dom" class="card-value"></span></p>
+      <p id="d-dom-n" class="status"></p>
       <p id="d-n" class="status"></p>
     </div>
 
@@ -165,6 +169,7 @@
     (function () {
       var DATA_URL = 'data/college_town_home_sales.csv';
       var MIN_PRICE = 10000;
+      var SQFT_PER_PING = 35.5842; // 1 坪 = 3.3058 m² = 35.5842 sq ft
       var money = new Intl.NumberFormat('en-US', {
         style: 'currency', currency: 'USD', maximumFractionDigits: 0
       });
@@ -349,7 +354,7 @@
       }
 
       // Fills the university dropdown and the card above the chart. Defaults to UIUC.
-      function setupPicker(entries, byName, points) {
+      function setupPicker(entries, byName, points, extra) {
         var select = document.getElementById('uni');
         var DEFAULT = 'University of Illinois Urbana-Champaign';
         var names = entries.map(function (e) { return e.name; }).sort();
@@ -364,6 +369,15 @@
           document.getElementById('d-name').textContent = e.name;
           document.getElementById('d-median').textContent = money.format(e.median);
           document.getElementById('d-n').textContent = count.format(e.n) + ' sales of $10,000 or more';
+
+          var st = extra[e.name] || { ping: [], dom: [] };
+          var pingSorted = st.ping.slice().sort(function (a, b) { return a - b; });
+          var domSorted = st.dom.slice().sort(function (a, b) { return a - b; });
+          document.getElementById('d-ping').textContent = pingSorted.length ? money.format(Math.round(median(pingSorted))) : 'not enough data';
+          document.getElementById('d-ping-n').textContent = 'based on ' + count.format(pingSorted.length) + ' sales with a known living area';
+          document.getElementById('d-dom').textContent = domSorted.length ? count.format(median(domSorted)) + ' days' : 'not enough data';
+          document.getElementById('d-dom-n').textContent = 'based on ' + count.format(domSorted.length) + ' sales with both a listing and a contract date';
+
           drawScatter(e.name, points[e.name] || []);
         }
         select.addEventListener('change', show);
@@ -372,7 +386,7 @@
         show();
       }
 
-      function render(groups, totals, points) {
+      function render(groups, totals, points, extra) {
         var list = document.getElementById('chart');
         var entries = Object.keys(groups).map(function (name) {
           var prices = groups[name].slice().sort(function (a, b) { return a - b; });
@@ -382,7 +396,7 @@
         var max = entries.length ? entries[0].median : 1;
         var byName = {};
         entries.forEach(function (e) { byName[e.name] = e; });
-        setupPicker(entries, byName, points);
+        setupPicker(entries, byName, points, extra);
 
         entries.forEach(function (e) {
           var li = document.createElement('li');
@@ -434,9 +448,14 @@
           var pCol = header.indexOf('sale_price');
           var mCol = header.indexOf('miles_to_campus');
           var cCol = header.indexOf('city');
-          if (uCol < 0 || pCol < 0 || mCol < 0 || cCol < 0) { throw new Error('Missing a required column'); }
+          var aCol = header.indexOf('living_area_sqft');
+          var lCol = header.indexOf('list_date');
+          var kCol = header.indexOf('contract_date');
+          if (uCol < 0 || pCol < 0 || mCol < 0 || cCol < 0 || aCol < 0 || lCol < 0 || kCol < 0) {
+            throw new Error('Missing a required column');
+          }
 
-          var groups = {}, points = {}, totals = { rows: 0, excluded: 0, kept: 0 };
+          var groups = {}, points = {}, extra = {}, totals = { rows: 0, excluded: 0, kept: 0 };
           rows.forEach(function (r) {
             if (r.length < header.length) { return; }
             totals.rows++;
@@ -448,8 +467,17 @@
             (groups[u] = groups[u] || []).push(price);
             var miles = Number(String(r[mCol]).trim());
             if (isFinite(miles)) { (points[u] = points[u] || []).push([miles, price, r[cCol]]); }
+
+            // Price per 坪 (only where the living area is known and above 0),
+            // and days from listing to contract (only where both dates are filled in)
+            var st = extra[u] = extra[u] || { ping: [], dom: [] };
+            var area = Number(String(r[aCol]).trim());
+            if (isFinite(area) && area > 0) { st.ping.push(price / (area / SQFT_PER_PING)); }
+            if (r[lCol] && r[kCol]) {
+              st.dom.push(Math.round((Date.parse(r[kCol]) - Date.parse(r[lCol])) / 86400000));
+            }
           });
-          render(groups, totals, points);
+          render(groups, totals, points, extra);
         })
         .catch(function (err) {
           showError('Could not load the chart data (' + err.message + ').');
