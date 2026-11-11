@@ -5,50 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Campus Premium</title>
   <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&display=swap">
   <style>
     :root {
       color-scheme: light dark;
-      --text: #1d1d1f;
-      --muted: #5f6368;
-      --bar: #2f6fb0;
-      --track: #e6e8eb;
-      --rule: #d0d4da;
-      --bg: #ffffff;
+      --text: #2b2320;
+      --muted: #6e625b;
+      --bar: #a51c30;
+      --track: #efe7da;
+      --rule: #e8dcc8;
+      --gold: #c9a227;
+      --bg: #fbf7f0;
+      --card: #fffdf8;
+      --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
     }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
-        --text: #e8eaed;
-        --muted: #a1a7ae;
-        --bar: #6ea8e8;
-        --track: #2c3036;
-        --rule: #3c4249;
-        --bg: #16181c;
+        --text: #f3ebe0;
+        --muted: #b5a899;
+        --bar: #d9536a;
+        --track: #332c27;
+        --rule: #3e342e;
+        --gold: #d4b24c;
+        --bg: #1f1a17;
+        --card: #27211d;
       }
     }
     :root[data-theme="dark"] {
-      --text: #e8eaed;
-      --muted: #a1a7ae;
-      --bar: #6ea8e8;
-      --track: #2c3036;
-      --rule: #3c4249;
-      --bg: #16181c;
+      --text: #f3ebe0;
+      --muted: #b5a899;
+      --bar: #d9536a;
+      --track: #332c27;
+      --rule: #3e342e;
+      --gold: #d4b24c;
+      --bg: #1f1a17;
+      --card: #27211d;
     }
     body {
       margin: 0 auto;
-      max-width: 52rem;
-      padding: 2.5rem 1rem 3rem;
+      max-width: 56rem;
+      padding: 2.5rem 1rem 3.5rem;
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      line-height: 1.5;
+      line-height: 1.55;
       color: var(--text);
       background: var(--bg);
     }
-    h1 { font-size: 2rem; margin: 0 0 0.25rem; }
-    h2 { font-size: 1.25rem; margin: 2rem 0 0.5rem; }
-    .lede { color: var(--muted); margin: 0 0 1rem; }
+    h1 {
+      font-family: var(--serif);
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--bar);
+      text-align: center;
+      letter-spacing: 0.01em;
+      margin: 0.5rem 0 0.25rem;
+    }
+    h2 {
+      font-family: var(--serif);
+      font-size: 1.45rem;
+      font-weight: 600;
+      margin: 2.75rem 0 0.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--gold);
+    }
+    .lede { color: var(--muted); margin: 0 0 1.75rem; text-align: center; font-style: italic; }
     .rule {
+      background: var(--card);
       border-left: 4px solid var(--bar);
-      padding: 0.25rem 0 0.25rem 0.75rem;
-      margin: 1rem 0 1.5rem;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(43, 35, 32, 0.06);
+      padding: 1rem 1.25rem;
+      margin: 0 0 1.5rem;
     }
     .status { color: var(--muted); }
     .error { color: #b3261e; }
@@ -88,24 +115,28 @@
     .picker select {
       font: inherit;
       color: var(--text);
-      background: var(--bg);
+      background: var(--card);
       border: 1px solid var(--rule);
-      border-radius: 4px;
-      padding: 0.4rem 0.6rem;
+      border-radius: 999px;
+      padding: 0.45rem 1rem;
       max-width: 100%;
     }
     .card {
-      border: 1px solid var(--rule);
-      border-radius: 6px;
-      padding: 0.75rem 1rem;
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(43, 35, 32, 0.06);
+      padding: 1.25rem 1.5rem;
       margin-bottom: 1.5rem;
     }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .stat { border-top: 3px solid var(--bar); padding-top: 0.75rem; }
+    .big { font-family: var(--serif); font-size: 1.6rem; font-weight: 700; color: var(--bar); margin: 0.2rem 0; }
     .card p { margin: 0.25rem 0; }
     .card-name { font-weight: 600; }
     .card-label { color: var(--muted); }
     .card-value { font-weight: 600; font-variant-numeric: tabular-nums; }
     .budget { margin: 1rem 0 1.5rem; }
-    .budget input[type="range"] { width: 100%; margin: 0.5rem 0 0.25rem; }
+    .budget input[type="range"] { width: 100%; margin: 0.5rem 0 0.25rem; accent-color: var(--bar); }
     .budget-scale { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); }
     .plot { position: relative; width: 100%; margin: 0.5rem 0 0.25rem; }
     .plot canvas { display: block; }
@@ -118,6 +149,10 @@
       padding: 0.3rem 0.5rem;
       border-radius: 4px;
       white-space: nowrap;
+    }
+    @media (max-width: 40rem) {
+      .stats { grid-template-columns: 1fr; }
+      h1 { font-size: 2rem; }
     }
     @media (max-width: 34rem) {
       ol.chart li { grid-template-columns: 1fr; }
@@ -142,12 +177,23 @@
     </div>
     <div class="card" aria-live="polite">
       <p id="d-name" class="card-name"></p>
-      <p><span class="card-label">Median sale price:</span> <span id="d-median" class="card-value"></span></p>
-      <p class="card-label">Median price per 坪 (about 3.3 m²): <span id="d-ping" class="card-value"></span></p>
-      <p id="d-ping-n" class="status"></p>
-      <p class="card-label">Median days from listing to contract: <span id="d-dom" class="card-value"></span></p>
-      <p id="d-dom-n" class="status"></p>
       <p id="d-n" class="status"></p>
+      <div class="stats">
+        <div class="stat">
+          <p class="card-label">Median sale price</p>
+          <p id="d-median" class="big"></p>
+        </div>
+        <div class="stat">
+          <p class="card-label">Median price per sq ft</p>
+          <p id="d-ping" class="big"></p>
+          <p id="d-ping-n" class="status"></p>
+        </div>
+        <div class="stat">
+          <p class="card-label">Median days from listing to contract</p>
+          <p id="d-dom" class="big"></p>
+          <p id="d-dom-n" class="status"></p>
+        </div>
+      </div>
     </div>
 
     <h2>Sale price and distance to campus</h2>
@@ -188,7 +234,6 @@
     (function () {
       var DATA_URL = 'data/college_town_home_sales.csv';
       var MIN_PRICE = 10000;
-      var SQFT_PER_PING = 35.5842; // 1 坪 = 3.3058 m² = 35.5842 sq ft
       var money = new Intl.NumberFormat('en-US', {
         style: 'currency', currency: 'USD', maximumFractionDigits: 0
       });
@@ -401,7 +446,7 @@
         var miles = under.map(function (p) { return p[0]; }).sort(function (a, b) { return a - b; });
 
         document.getElementById('b-area').textContent = areas.length
-          ? count.format(Math.round(median(areas))) + ' sq ft (' + count.format(Math.round(median(areas) / SQFT_PER_PING)) + ' 坪)'
+          ? count.format(Math.round(median(areas))) + ' sq ft'
           : 'not enough data';
         document.getElementById('b-beds').textContent = beds.length
           ? count.format(median(beds)) + ' bedrooms' : 'not enough data';
@@ -533,11 +578,11 @@
               (points[u] = points[u] || []).push([miles, price, r[cCol], beds, sqft > 0 ? sqft : 0]);
             }
 
-            // Price per 坪 (only where the living area is known and above 0),
+            // Price per sq ft (only where the living area is known and above 0),
             // and days from listing to contract (only where both dates are filled in)
             var st = extra[u] = extra[u] || { ping: [], dom: [] };
             var area = Number(String(r[aCol]).trim());
-            if (isFinite(area) && area > 0) { st.ping.push(price / (area / SQFT_PER_PING)); }
+            if (isFinite(area) && area > 0) { st.ping.push(price / area); }
             if (r[lCol] && r[kCol]) {
               st.dom.push(Math.round((Date.parse(r[kCol]) - Date.parse(r[lCol])) / 86400000));
             }
