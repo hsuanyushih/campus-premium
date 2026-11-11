@@ -104,6 +104,9 @@
     .card-name { font-weight: 600; }
     .card-label { color: var(--muted); }
     .card-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .budget { margin: 1rem 0 1.5rem; }
+    .budget input[type="range"] { width: 100%; margin: 0.5rem 0 0.25rem; }
+    .budget-scale { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); }
     .plot { position: relative; width: 100%; margin: 0.5rem 0 0.25rem; }
     .plot canvas { display: block; }
     .tip {
@@ -159,6 +162,22 @@
     <p id="error" class="error" hidden></p>
     <ol id="chart" class="chart" aria-label="Bar chart of median sale price by university"></ol>
     <noscript><p>This chart needs JavaScript to compute the medians from the data file.</p></noscript>
+
+    <h2>What a budget buys</h2>
+    <p class="status">Pick a budget to see how many sales in the selected university were at or under it, and what those homes were like.</p>
+    <div class="budget">
+      <label for="budget"><strong>Budget:</strong> <span id="budget-out" class="card-value"></span></label>
+      <input id="budget" type="range" min="100000" max="1000000" step="10000" value="300000">
+      <div class="budget-scale"><span>$100,000</span><span>$1,000,000</span></div>
+    </div>
+    <div class="card" aria-live="polite">
+      <p id="b-share"></p>
+      <p class="card-label">Median among those homes:</p>
+      <p><span class="card-label">Living area:</span> <span id="b-area" class="card-value"></span></p>
+      <p><span class="card-label">Bedrooms:</span> <span id="b-beds" class="card-value"></span></p>
+      <p><span class="card-label">Distance to campus:</span> <span id="b-miles" class="card-value"></span></p>
+      <p id="b-n" class="status"></p>
+    </div>
   </main>
 
   <footer>
@@ -353,6 +372,44 @@
           ' (99th percentile); ' + count.format(hidden) + ' higher-priced sales are not drawn.';
       }
 
+      // Budget slider: for the selected university, how many sales were at or under the budget,
+      // and the median living area, bedrooms and distance to campus of those sales.
+      var currentPts = [];
+
+      function renderBudget() {
+        var B = Number(document.getElementById('budget').value);
+        document.getElementById('budget-out').textContent = money.format(B);
+        var total = currentPts.length;
+        var under = currentPts.filter(function (p) { return p[1] <= B; });
+        var shareEl = document.getElementById('b-share');
+        var noteEl = document.getElementById('b-n');
+
+        if (!under.length) {
+          shareEl.textContent = 'No sales at or under this price.';
+          ['b-area', 'b-beds', 'b-miles'].forEach(function (id) { document.getElementById(id).textContent = '–'; });
+          noteEl.textContent = '';
+          return;
+        }
+
+        var pct = Math.round((under.length / total) * 100);
+        shareEl.textContent = pct + '% of sales (' + count.format(under.length) + ' of ' + count.format(total) +
+          ') were at or under ' + money.format(B) + '.';
+
+        var areas = under.filter(function (p) { return p[4] > 0; }).map(function (p) { return p[4]; })
+          .sort(function (a, b) { return a - b; });
+        var beds = under.map(function (p) { return p[3]; }).filter(isFinite).sort(function (a, b) { return a - b; });
+        var miles = under.map(function (p) { return p[0]; }).sort(function (a, b) { return a - b; });
+
+        document.getElementById('b-area').textContent = areas.length
+          ? count.format(Math.round(median(areas))) + ' sq ft (' + count.format(Math.round(median(areas) / SQFT_PER_PING)) + ' 坪)'
+          : 'not enough data';
+        document.getElementById('b-beds').textContent = beds.length
+          ? count.format(median(beds)) + ' bedrooms' : 'not enough data';
+        document.getElementById('b-miles').textContent = count.format(Math.round(median(miles) * 10) / 10) + ' miles';
+        noteEl.textContent = 'Medians of those ' + count.format(under.length) + ' sales (living area from ' +
+          count.format(areas.length) + ' of them). These are past sales, not homes for sale today.';
+      }
+
       // Fills the university dropdown and the card above the chart. Defaults to UIUC.
       function setupPicker(entries, byName, points, extra) {
         var select = document.getElementById('uni');
@@ -378,10 +435,13 @@
           document.getElementById('d-dom').textContent = domSorted.length ? count.format(median(domSorted)) + ' days' : 'not enough data';
           document.getElementById('d-dom-n').textContent = 'based on ' + count.format(domSorted.length) + ' sales with both a listing and a contract date';
 
-          drawScatter(e.name, points[e.name] || []);
+          currentPts = points[e.name] || [];
+          renderBudget();
+          drawScatter(e.name, currentPts);
         }
         select.addEventListener('change', show);
         window.addEventListener('resize', show);
+        document.getElementById('budget').addEventListener('input', renderBudget);
         select.value = byName[DEFAULT] ? DEFAULT : names[0];
         show();
       }
@@ -451,7 +511,8 @@
           var aCol = header.indexOf('living_area_sqft');
           var lCol = header.indexOf('list_date');
           var kCol = header.indexOf('contract_date');
-          if (uCol < 0 || pCol < 0 || mCol < 0 || cCol < 0 || aCol < 0 || lCol < 0 || kCol < 0) {
+          var bCol = header.indexOf('beds');
+          if (uCol < 0 || pCol < 0 || mCol < 0 || cCol < 0 || aCol < 0 || lCol < 0 || kCol < 0 || bCol < 0) {
             throw new Error('Missing a required column');
           }
 
@@ -466,7 +527,11 @@
             var u = r[uCol];
             (groups[u] = groups[u] || []).push(price);
             var miles = Number(String(r[mCol]).trim());
-            if (isFinite(miles)) { (points[u] = points[u] || []).push([miles, price, r[cCol]]); }
+            var beds = Number(String(r[bCol]).trim());
+            var sqft = Number(String(r[aCol]).trim());
+            if (isFinite(miles)) {
+              (points[u] = points[u] || []).push([miles, price, r[cCol], beds, sqft > 0 ? sqft : 0]);
+            }
 
             // Price per 坪 (only where the living area is known and above 0),
             // and days from listing to contract (only where both dates are filled in)
