@@ -1,31 +1,553 @@
 <!DOCTYPE html>
-<!-- A placeholder from the Home Sales template. Replace this file with your site's first page. -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Under construction</title>
-  <!-- An empty icon, so the browser doesn't log an error looking for favicon.ico -->
+  <title>Campus Premium</title>
   <link rel="icon" href="data:,">
   <style>
-    :root { color-scheme: light dark; }
-    body {
-      max-width: 40rem;
-      margin: 0 auto;
-      padding: 3rem 1rem;
-      font-family: system-ui, sans-serif;
-      line-height: 1.5;
+    :root {
+      color-scheme: light dark;
+      --text: #1d1d1f;
+      --muted: #5f6368;
+      --bar: #2f6fb0;
+      --track: #e6e8eb;
+      --rule: #d0d4da;
+      --bg: #ffffff;
     }
-    footer { margin-top: 3rem; font-size: 0.875rem; opacity: 0.75; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --text: #e8eaed;
+        --muted: #a1a7ae;
+        --bar: #6ea8e8;
+        --track: #2c3036;
+        --rule: #3c4249;
+        --bg: #16181c;
+      }
+    }
+    :root[data-theme="dark"] {
+      --text: #e8eaed;
+      --muted: #a1a7ae;
+      --bar: #6ea8e8;
+      --track: #2c3036;
+      --rule: #3c4249;
+      --bg: #16181c;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 52rem;
+      padding: 2.5rem 1rem 3rem;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+    }
+    h1 { font-size: 2rem; margin: 0 0 0.25rem; }
+    h2 { font-size: 1.25rem; margin: 2rem 0 0.5rem; }
+    .lede { color: var(--muted); margin: 0 0 1rem; }
+    .rule {
+      border-left: 4px solid var(--bar);
+      padding: 0.25rem 0 0.25rem 0.75rem;
+      margin: 1rem 0 1.5rem;
+    }
+    .status { color: var(--muted); }
+    .error { color: #b3261e; }
+    ol.chart { list-style: none; margin: 0; padding: 0; }
+    ol.chart li {
+      display: grid;
+      grid-template-columns: minmax(0, 14rem) 1fr;
+      gap: 0.25rem 0.75rem;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .name { font-size: 0.95rem; }
+    .name .n { display: block; font-size: 0.8rem; color: var(--muted); }
+    .bar-row { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+    .track {
+      flex: 1;
+      background: var(--track);
+      border-radius: 3px;
+      height: 1.1rem;
+      min-width: 0;
+    }
+    .bar {
+      height: 100%;
+      background: var(--bar);
+      border-radius: 3px;
+      min-width: 2px;
+    }
+    .value {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .picker { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin: 1.5rem 0 0.75rem; }
+    .picker label { font-weight: 600; }
+    .picker select {
+      font: inherit;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 0.4rem 0.6rem;
+      max-width: 100%;
+    }
+    .card {
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .card p { margin: 0.25rem 0; }
+    .card-name { font-weight: 600; }
+    .card-label { color: var(--muted); }
+    .card-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .budget { margin: 1rem 0 1.5rem; }
+    .budget input[type="range"] { width: 100%; margin: 0.5rem 0 0.25rem; }
+    .budget-scale { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); }
+    .plot { position: relative; width: 100%; margin: 0.5rem 0 0.25rem; }
+    .plot canvas { display: block; }
+    .tip {
+      position: absolute;
+      pointer-events: none;
+      background: var(--text);
+      color: var(--bg);
+      font-size: 0.85rem;
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    @media (max-width: 34rem) {
+      ol.chart li { grid-template-columns: 1fr; }
+    }
+    footer { margin-top: 3rem; font-size: 0.875rem; color: var(--muted); }
   </style>
 </head>
 <body>
   <main>
-    <h1>This site is under construction</h1>
-    <p>It will show findings from the College-town home sales dataset.</p>
+    <h1>Campus Premium</h1>
+    <p class="lede">Median sale price of homes near each of 11 universities.</p>
+
+    <div class="rule">
+      <p><strong>Rule:</strong> sales under $10,000 are excluded. Every other sale in the dataset is
+      included. Medians are rounded to whole dollars.</p>
+      <p id="counts" class="status">Loading data&hellip;</p>
+    </div>
+
+    <div class="picker">
+      <label for="uni">University</label>
+      <select id="uni" aria-describedby="d-n"></select>
+    </div>
+    <div class="card" aria-live="polite">
+      <p id="d-name" class="card-name"></p>
+      <p><span class="card-label">Median sale price:</span> <span id="d-median" class="card-value"></span></p>
+      <p class="card-label">Median price per 坪 (about 3.3 m²): <span id="d-ping" class="card-value"></span></p>
+      <p id="d-ping-n" class="status"></p>
+      <p class="card-label">Median days from listing to contract: <span id="d-dom" class="card-value"></span></p>
+      <p id="d-dom-n" class="status"></p>
+      <p id="d-n" class="status"></p>
+    </div>
+
+    <h2>Sale price and distance to campus</h2>
+    <p class="status">Each dot is one sale. Across: straight-line miles to campus. Up: sale price. The dark line is the median price in each half-mile band. Hover over a dot for details.</p>
+    <div class="plot">
+      <canvas id="scatter" role="img" aria-label="Scatter plot of sale price against miles to campus for the selected university"></canvas>
+      <div id="tip" class="tip" role="status" hidden></div>
+    </div>
+    <p id="scatter-note" class="status"></p>
+
+    <h2>Median sale price by university</h2>
+    <p id="error" class="error" hidden></p>
+    <ol id="chart" class="chart" aria-label="Bar chart of median sale price by university"></ol>
+    <noscript><p>This chart needs JavaScript to compute the medians from the data file.</p></noscript>
+
+    <h2>What a budget buys</h2>
+    <p class="status">Pick a budget to see how many sales in the selected university were at or under it, and what those homes were like.</p>
+    <div class="budget">
+      <label for="budget"><strong>Budget:</strong> <span id="budget-out" class="card-value"></span></label>
+      <input id="budget" type="range" min="100000" max="1000000" step="10000" value="300000">
+      <div class="budget-scale"><span>$100,000</span><span>$1,000,000</span></div>
+    </div>
+    <div class="card" aria-live="polite">
+      <p id="b-share"></p>
+      <p class="card-label">Median among those homes:</p>
+      <p><span class="card-label">Living area:</span> <span id="b-area" class="card-value"></span></p>
+      <p><span class="card-label">Bedrooms:</span> <span id="b-beds" class="card-value"></span></p>
+      <p><span class="card-label">Distance to campus:</span> <span id="b-miles" class="card-value"></span></p>
+      <p id="b-n" class="status"></p>
+    </div>
   </main>
+
   <footer>
-    <p>Data: College-town home sales dataset, version 1.0 (2026). University of Illinois-Deloitte Foundation Center for Business Emerging Technologies. Data collected March 2026.</p>
+    <p>Data: College-town home sales dataset, version 1.0 (2026). University of Illinois-Deloitte Foundation Center for Business Emerging Technologies. Data collected March 2026. Source file: <code>data/college_town_home_sales.csv</code>.</p>
   </footer>
+
+  <script>
+    (function () {
+      var DATA_URL = 'data/college_town_home_sales.csv';
+      var MIN_PRICE = 10000;
+      var SQFT_PER_PING = 35.5842; // 1 坪 = 3.3058 m² = 35.5842 sq ft
+      var money = new Intl.NumberFormat('en-US', {
+        style: 'currency', currency: 'USD', maximumFractionDigits: 0
+      });
+      var count = new Intl.NumberFormat('en-US');
+
+      // Quote-aware CSV parser. Returns an array of rows, each an array of fields.
+      function parseCSV(text) {
+        var rows = [], row = [], field = '', inQuotes = false, i = 0, c;
+        var len = text.length;
+        while (i < len) {
+          c = text.charAt(i);
+          if (inQuotes) {
+            if (c === '"') {
+              if (text.charAt(i + 1) === '"') { field += '"'; i += 2; continue; }
+              inQuotes = false; i++; continue;
+            }
+            field += c; i++; continue;
+          }
+          if (c === '"') { inQuotes = true; i++; continue; }
+          if (c === ',') { row.push(field); field = ''; i++; continue; }
+          if (c === '\r') { i++; continue; }
+          if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+          field += c; i++;
+        }
+        if (field !== '' || row.length) { row.push(field); rows.push(row); }
+        return rows;
+      }
+
+      function median(sorted) {
+        var n = sorted.length, mid = Math.floor(n / 2);
+        return n % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      }
+
+      function showError(message) {
+        var el = document.getElementById('error');
+        el.textContent = message;
+        el.hidden = false;
+        document.getElementById('counts').textContent = '';
+      }
+
+      // Nice round step (1, 2 or 5 times a power of ten) for axis ticks.
+      function niceStep(raw) {
+        var pow = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+        var f = raw / pow;
+        return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * pow;
+      }
+
+      // Draws one small, see-through dot per sale (x = miles to campus, y = sale price),
+      // a line of median prices for each half-mile band, and hover details.
+      // The price axis stops at the 99th percentile so a few extreme sales don't flatten the rest.
+      var BAND_MILES = 0.5, MIN_BAND_SALES = 10;
+      var dotHits = [];
+
+      function drawScatter(name, pts) {
+        var canvas = document.getElementById('scatter');
+        var note = document.getElementById('scatter-note');
+        var tip = document.getElementById('tip');
+        var cssW = Math.max(280, Math.min(canvas.parentNode.clientWidth, 900));
+        var cssH = Math.round(Math.max(280, cssW * 0.6));
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.round(cssW * dpr);
+        canvas.height = Math.round(cssH * dpr);
+        canvas.style.width = cssW + 'px';
+        canvas.style.height = cssH + 'px';
+        var ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, cssW, cssH);
+        tip.hidden = true;
+
+        var styles = getComputedStyle(document.documentElement);
+        var barColor = styles.getPropertyValue('--bar').trim();
+        var textColor = styles.getPropertyValue('--text').trim();
+        var bgColor = styles.getPropertyValue('--bg').trim();
+        var muted = styles.getPropertyValue('--muted').trim();
+        var rule = styles.getPropertyValue('--rule').trim();
+
+        var m = { l: 72, r: 12, t: 12, b: 40 };
+        var plotW = cssW - m.l - m.r, plotH = cssH - m.t - m.b;
+
+        var prices = pts.map(function (p) { return p[1]; }).sort(function (a, b) { return a - b; });
+        var yMax = prices.length ? prices[Math.floor((prices.length - 1) * 0.99)] : 1;
+        var xMax = pts.reduce(function (acc, p) { return Math.max(acc, p[0]); }, 0);
+        xMax = Math.max(1, Math.ceil(xMax));
+
+        function X(v) { return m.l + (v / xMax) * plotW; }
+        function Y(v) { return m.t + plotH - (Math.min(v, yMax) / yMax) * plotH; }
+
+        // Median price in each half-mile band (all sales in the band, including any above the axis)
+        var bands = {};
+        pts.forEach(function (p) {
+          var k = Math.floor(p[0] / BAND_MILES);
+          (bands[k] = bands[k] || []).push(p[1]);
+        });
+        var medLine = [];
+        Object.keys(bands).map(Number).sort(function (a, b) { return a - b; }).forEach(function (k) {
+          var arr = bands[k];
+          if (arr.length < MIN_BAND_SALES) { return; }
+          arr.sort(function (a, b) { return a - b; });
+          medLine.push({ x: (k + 0.5) * BAND_MILES, y: median(arr) });
+        });
+
+        ctx.font = '12px system-ui, sans-serif';
+        ctx.lineWidth = 1;
+
+        // Y ticks and grid
+        var yStep = niceStep(yMax / 5);
+        ctx.fillStyle = muted; ctx.strokeStyle = rule;
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        for (var yv = 0; yv <= yMax; yv += yStep) {
+          var yy = Math.round(Y(yv)) + 0.5;
+          ctx.beginPath(); ctx.moveTo(m.l, yy); ctx.lineTo(m.l + plotW, yy); ctx.stroke();
+          ctx.fillText(money.format(yv), m.l - 6, yy);
+        }
+        // X ticks
+        var xStep = niceStep(xMax / 6);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        for (var xv = 0; xv <= xMax + 1e-9; xv += xStep) {
+          ctx.fillText(String(Math.round(xv * 10) / 10), X(xv), m.t + plotH + 6);
+        }
+        ctx.fillText('miles to campus', m.l + plotW / 2, m.t + plotH + 22);
+
+        // Dots (small and see-through, so dense areas show their shape)
+        var shown = 0;
+        dotHits = [];
+        ctx.fillStyle = barColor;
+        ctx.globalAlpha = 0.2;
+        pts.forEach(function (p) {
+          if (p[1] > yMax) { return; }
+          shown++;
+          var x = X(p[0]), y = Y(p[1]);
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
+          ctx.fill();
+          dotHits.push({ x: x, y: y, miles: p[0], price: p[1], city: p[2] });
+        });
+        ctx.globalAlpha = 1;
+
+        // Median line on top of the dots
+        if (medLine.length) {
+          ctx.strokeStyle = textColor;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          medLine.forEach(function (pt, i) {
+            if (i === 0) { ctx.moveTo(X(pt.x), Y(pt.y)); } else { ctx.lineTo(X(pt.x), Y(pt.y)); }
+          });
+          ctx.stroke();
+          ctx.fillStyle = textColor;
+          ctx.strokeStyle = bgColor;
+          ctx.lineWidth = 1.5;
+          medLine.forEach(function (pt) {
+            ctx.beginPath();
+            ctx.arc(X(pt.x), Y(pt.y), 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          });
+        }
+
+        // Hover: show the nearest dot within 6 px
+        canvas.onpointermove = function (ev) {
+          var rect = canvas.getBoundingClientRect();
+          var mx = ev.clientX - rect.left, my = ev.clientY - rect.top;
+          var best = null, bestD = 36;
+          for (var i = 0; i < dotHits.length; i++) {
+            var dx = dotHits[i].x - mx, dy = dotHits[i].y - my;
+            var d = dx * dx + dy * dy;
+            if (d < bestD) { bestD = d; best = dotHits[i]; }
+          }
+          if (!best) { tip.hidden = true; return; }
+          tip.textContent = money.format(best.price) + ' · ' + best.miles.toFixed(1) + ' mi from campus · ' + best.city;
+          tip.style.left = (mx > cssW - 240 ? mx - 230 : mx + 12) + 'px';
+          tip.style.top = Math.max(0, my - 34) + 'px';
+          tip.hidden = false;
+        };
+        canvas.onpointerleave = function () { tip.hidden = true; };
+
+        canvas.setAttribute('aria-label', 'Scatter plot of sale price against miles to campus for ' + name + ', ' + shown + ' sales shown, with a median line');
+        var hidden = pts.length - shown;
+        note.textContent = 'Showing ' + count.format(shown) + ' of ' + count.format(pts.length) +
+          ' sales. Line: median price in each half-mile band with at least ' + MIN_BAND_SALES +
+          ' sales (bands with fewer are left out). The price axis stops at ' + money.format(Math.round(yMax)) +
+          ' (99th percentile); ' + count.format(hidden) + ' higher-priced sales are not drawn.';
+      }
+
+      // Budget slider: for the selected university, how many sales were at or under the budget,
+      // and the median living area, bedrooms and distance to campus of those sales.
+      var currentPts = [];
+
+      function renderBudget() {
+        var B = Number(document.getElementById('budget').value);
+        document.getElementById('budget-out').textContent = money.format(B);
+        var total = currentPts.length;
+        var under = currentPts.filter(function (p) { return p[1] <= B; });
+        var shareEl = document.getElementById('b-share');
+        var noteEl = document.getElementById('b-n');
+
+        if (!under.length) {
+          shareEl.textContent = 'No sales at or under this price.';
+          ['b-area', 'b-beds', 'b-miles'].forEach(function (id) { document.getElementById(id).textContent = '–'; });
+          noteEl.textContent = '';
+          return;
+        }
+
+        var pct = Math.round((under.length / total) * 100);
+        shareEl.textContent = pct + '% of sales (' + count.format(under.length) + ' of ' + count.format(total) +
+          ') were at or under ' + money.format(B) + '.';
+
+        var areas = under.filter(function (p) { return p[4] > 0; }).map(function (p) { return p[4]; })
+          .sort(function (a, b) { return a - b; });
+        var beds = under.map(function (p) { return p[3]; }).filter(isFinite).sort(function (a, b) { return a - b; });
+        var miles = under.map(function (p) { return p[0]; }).sort(function (a, b) { return a - b; });
+
+        document.getElementById('b-area').textContent = areas.length
+          ? count.format(Math.round(median(areas))) + ' sq ft (' + count.format(Math.round(median(areas) / SQFT_PER_PING)) + ' 坪)'
+          : 'not enough data';
+        document.getElementById('b-beds').textContent = beds.length
+          ? count.format(median(beds)) + ' bedrooms' : 'not enough data';
+        document.getElementById('b-miles').textContent = count.format(Math.round(median(miles) * 10) / 10) + ' miles';
+        noteEl.textContent = 'Medians of those ' + count.format(under.length) + ' sales (living area from ' +
+          count.format(areas.length) + ' of them). These are past sales, not homes for sale today.';
+      }
+
+      // Fills the university dropdown and the card above the chart. Defaults to UIUC.
+      function setupPicker(entries, byName, points, extra) {
+        var select = document.getElementById('uni');
+        var DEFAULT = 'University of Illinois Urbana-Champaign';
+        var names = entries.map(function (e) { return e.name; }).sort();
+        names.forEach(function (name) {
+          var opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          select.appendChild(opt);
+        });
+        function show() {
+          var e = byName[select.value];
+          document.getElementById('d-name').textContent = e.name;
+          document.getElementById('d-median').textContent = money.format(e.median);
+          document.getElementById('d-n').textContent = count.format(e.n) + ' sales of $10,000 or more';
+
+          var st = extra[e.name] || { ping: [], dom: [] };
+          var pingSorted = st.ping.slice().sort(function (a, b) { return a - b; });
+          var domSorted = st.dom.slice().sort(function (a, b) { return a - b; });
+          document.getElementById('d-ping').textContent = pingSorted.length ? money.format(Math.round(median(pingSorted))) : 'not enough data';
+          document.getElementById('d-ping-n').textContent = 'based on ' + count.format(pingSorted.length) + ' sales with a known living area';
+          document.getElementById('d-dom').textContent = domSorted.length ? count.format(median(domSorted)) + ' days' : 'not enough data';
+          document.getElementById('d-dom-n').textContent = 'based on ' + count.format(domSorted.length) + ' sales with both a listing and a contract date';
+
+          currentPts = points[e.name] || [];
+          renderBudget();
+          drawScatter(e.name, currentPts);
+        }
+        select.addEventListener('change', show);
+        window.addEventListener('resize', show);
+        document.getElementById('budget').addEventListener('input', renderBudget);
+        select.value = byName[DEFAULT] ? DEFAULT : names[0];
+        show();
+      }
+
+      function render(groups, totals, points, extra) {
+        var list = document.getElementById('chart');
+        var entries = Object.keys(groups).map(function (name) {
+          var prices = groups[name].slice().sort(function (a, b) { return a - b; });
+          return { name: name, n: prices.length, median: Math.round(median(prices)) };
+        });
+        entries.sort(function (a, b) { return b.median - a.median; });
+        var max = entries.length ? entries[0].median : 1;
+        var byName = {};
+        entries.forEach(function (e) { byName[e.name] = e; });
+        setupPicker(entries, byName, points, extra);
+
+        entries.forEach(function (e) {
+          var li = document.createElement('li');
+
+          var label = document.createElement('div');
+          label.className = 'name';
+          label.textContent = e.name;
+          var n = document.createElement('span');
+          n.className = 'n';
+          n.textContent = count.format(e.n) + ' sales';
+          label.appendChild(n);
+
+          var barRow = document.createElement('div');
+          barRow.className = 'bar-row';
+          var track = document.createElement('div');
+          track.className = 'track';
+          var bar = document.createElement('div');
+          bar.className = 'bar';
+          bar.style.width = ((e.median / max) * 100).toFixed(2) + '%';
+          bar.setAttribute('role', 'img');
+          bar.setAttribute('aria-label', e.name + ': ' + money.format(e.median));
+          track.appendChild(bar);
+          var value = document.createElement('span');
+          value.className = 'value';
+          value.textContent = money.format(e.median);
+          barRow.appendChild(track);
+          barRow.appendChild(value);
+
+          li.appendChild(label);
+          li.appendChild(barRow);
+          list.appendChild(li);
+        });
+
+        document.getElementById('counts').textContent =
+          'Excluded ' + count.format(totals.excluded) + ' of ' + count.format(totals.rows) +
+          ' sales under $10,000. Medians use the remaining ' + count.format(totals.kept) +
+          ' sales across ' + entries.length + ' universities.';
+      }
+
+      fetch(DATA_URL)
+        .then(function (res) {
+          if (!res.ok) { throw new Error('HTTP ' + res.status); }
+          return res.text();
+        })
+        .then(function (text) {
+          var rows = parseCSV(text);
+          var header = rows.shift();
+          var uCol = header.indexOf('university');
+          var pCol = header.indexOf('sale_price');
+          var mCol = header.indexOf('miles_to_campus');
+          var cCol = header.indexOf('city');
+          var aCol = header.indexOf('living_area_sqft');
+          var lCol = header.indexOf('list_date');
+          var kCol = header.indexOf('contract_date');
+          var bCol = header.indexOf('beds');
+          if (uCol < 0 || pCol < 0 || mCol < 0 || cCol < 0 || aCol < 0 || lCol < 0 || kCol < 0 || bCol < 0) {
+            throw new Error('Missing a required column');
+          }
+
+          var groups = {}, points = {}, extra = {}, totals = { rows: 0, excluded: 0, kept: 0 };
+          rows.forEach(function (r) {
+            if (r.length < header.length) { return; }
+            totals.rows++;
+            var price = Number(String(r[pCol]).trim());
+            if (!isFinite(price) || String(r[pCol]).trim() === '') { totals.excluded++; return; }
+            if (price < MIN_PRICE) { totals.excluded++; return; }
+            totals.kept++;
+            var u = r[uCol];
+            (groups[u] = groups[u] || []).push(price);
+            var miles = Number(String(r[mCol]).trim());
+            var beds = Number(String(r[bCol]).trim());
+            var sqft = Number(String(r[aCol]).trim());
+            if (isFinite(miles)) {
+              (points[u] = points[u] || []).push([miles, price, r[cCol], beds, sqft > 0 ? sqft : 0]);
+            }
+
+            // Price per 坪 (only where the living area is known and above 0),
+            // and days from listing to contract (only where both dates are filled in)
+            var st = extra[u] = extra[u] || { ping: [], dom: [] };
+            var area = Number(String(r[aCol]).trim());
+            if (isFinite(area) && area > 0) { st.ping.push(price / (area / SQFT_PER_PING)); }
+            if (r[lCol] && r[kCol]) {
+              st.dom.push(Math.round((Date.parse(r[kCol]) - Date.parse(r[lCol])) / 86400000));
+            }
+          });
+          render(groups, totals, points, extra);
+        })
+        .catch(function (err) {
+          showError('Could not load the chart data (' + err.message + ').');
+        });
+    })();
+  </script>
 </body>
 </html>
