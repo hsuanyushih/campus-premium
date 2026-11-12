@@ -6,7 +6,7 @@
   <title>Campus Premium</title>
   <link rel="icon" href="data:,">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600&family=Source+Serif+4:wght@600;700&display=swap">
   <style>
     :root {
       color-scheme: light dark;
@@ -52,14 +52,29 @@
       background: var(--bg);
     }
     h1 {
-      font-family: var(--serif);
-      font-size: 3.25rem;
-      font-weight: 700;
+      font-family: "EB Garamond", Georgia, serif;
+      font-size: 3.75rem;
+      font-weight: 600;
       line-height: 1.1;
-      color: var(--bar);
+      color: var(--text);
       text-align: center;
-      letter-spacing: 0.02em;
-      margin: 0 0 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      margin: 0;
+    }
+    .title-wrap {
+      border-top: 2px solid var(--bar);
+      border-bottom: 2px solid var(--bar);
+      padding: 1.25rem 2rem;
+      margin: 0.5rem 0 0;
+    }
+    .title-sub {
+      text-align: center;
+      margin-top: 0.9rem;
+      font-size: 0.85rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--bar);
     }
     h2 {
       font-family: var(--serif);
@@ -151,15 +166,6 @@
       border-radius: 4px;
       white-space: nowrap;
     }
-    .eyebrow {
-      text-align: center;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--muted);
-      margin: 0 0 0.25rem;
-    }
     .card, .rule, .stat {
       transition: box-shadow 0.25s ease;
     }
@@ -168,7 +174,8 @@
     }
     @media (max-width: 40rem) {
       .stats { grid-template-columns: 1fr; }
-      h1 { font-size: 2.4rem; }
+      h1 { font-size: 2.3rem; letter-spacing: 0.14em; }
+      .title-wrap { padding: 1rem 1rem; }
     }
     @media (max-width: 34rem) {
       ol.chart li { grid-template-columns: 1fr; }
@@ -178,8 +185,10 @@
 </head>
 <body>
   <main>
-    <p class="eyebrow">College-town home sales</p>
-    <h1>Campus Premium</h1>
+    <div class="title-wrap">
+      <h1>Campus Premium</h1>
+    </div>
+    <p class="title-sub">College-town home sales</p>
     <p class="lede">Median sale price of homes near each of 11 universities.</p>
 
     <div class="rule">
