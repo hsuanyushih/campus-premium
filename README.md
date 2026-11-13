@@ -18,7 +18,7 @@ https://hsuanyushih.github.io/campus-premium/
 
 The site reads `data/college_town_home_sales.csv` in the browser and computes every figure from it. No number is typed in by hand.
 
-**Rows left out.** Sales under $10,000 are excluded everywhere on the site: 40 of the 35,442 rows. The other 35,402 sales are used. This is the site's own rule. The description sheet's city table uses a $1,000 cutoff, so some of its medians differ from ours. For example, Chapel Hill is $735,000 in the sheet and $725,000 here.
+**Rows left out.** Sales under $10,000 are excluded everywhere on the site: 40 of the 35,442 rows. The other 35,402 sales are used. This is the site's own rule. The description sheet's city table uses a $1,000 cutoff and reports cities, not universities, so its figures will not match ours line by line. For example, the sheet's Chapel Hill is the city alone, while our UNC figure also includes Carrboro and Pittsboro.
 
 **How each figure is defined**
 
