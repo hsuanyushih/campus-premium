@@ -1,4 +1,4 @@
-# [Your site's title]
+# Campus Premium
 
 ## Start here (delete this section before you submit)
 
@@ -15,7 +15,7 @@ This repository is your starting point for the Home Sales case. It already holds
 
 | Path | What it is |
 |---|---|
-| `index.html` | A placeholder page. Replace it with your site. |
+| `index.html` | The site: a university dropdown, number cards, a scatter plot, a bar chart and a budget slider. |
 | `data/college_town_home_sales.csv` | The dataset, version 1.0: 35,442 rows. Your site reads this file. |
 | `data/college_town_home_sales.xlsx`, `.sqlite`, `.duckdb`, `.parquet` | The same data in Excel, SQLite, DuckDB and Parquet formats, with identical values |
 | `docs/data_description_sheet.md` | What every column means, and five problems in the data |
@@ -28,19 +28,43 @@ Don't edit any of the five dataset files. Your site needs only the CSV file. The
 
 ## What this site is for
 
-_Replace this line with your site's question and audience, or a short description of the site._
+Campus Premium asks how home prices in college towns change with distance to campus. It covers the 11 universities in the College-town home sales dataset. For each campus, it shows:
+
+- the median sale price, the median price per square foot, and the median number of days from listing to contract;
+- how sale prices spread out by distance to campus;
+- how many sales a given budget would have covered, and what those homes were like.
+
+The audience is anyone comparing college-town housing: prospective buyers, students and families, and researchers.
 
 ## Live site
 
-https://your-username.github.io/your-repo-name/
+https://hsuanyushih.github.io/campus-premium/
 
 ## Data notes
+
+The site reads `data/college_town_home_sales.csv` in the browser and computes every figure from it. No number is typed in by hand.
+
+**Rows left out.** Sales under $10,000 are excluded everywhere on the site: 40 of the 35,442 rows. The other 35,402 sales are used. This is the site's own rule. The description sheet's city table uses a $1,000 cutoff, so some of its medians differ from ours. For example, Chapel Hill is $735,000 in the sheet and $725,000 here.
+
+**How each figure is defined**
+
+- **Median sale price:** the median of `sale_price` for the university's sales, rounded to whole dollars. The bar chart and the number card use the same figure.
+- **Median price per sq ft:** the median of `sale_price` divided by `living_area_sqft`. Sales with a blank or zero living area are left out of this figure only.
+- **Median days from listing to contract:** the median of `contract_date` minus `list_date`, in days. Sales missing either date are left out of this figure only. Days from listing to closing are not used.
+- **Scatter plot:** one dot per sale. Across is `miles_to_campus`, up is `sale_price`. The price axis stops at the university's 99th percentile, so a few very high sales do not flatten the rest. The page says how many higher-priced sales are not drawn. The dark line is the median price in each half-mile band, drawn only where a band has at least 10 sales.
+- **Budget slider:** from $100,000 to $1,000,000. It shows the share of the university's sales at or under the chosen price, and the medians of living area, bedrooms and distance to campus for those sales. Sales above $1,000,000 are not in the share. These are past sales, not homes for sale today.
+
+**Other points from the description sheet**
+
+- `home_type` is not used, because the sheet says it is unreliable.
+- Street addresses are not used as keys. `listing_id` is.
+- The figures are as the source reported them. They have not been checked against county records.
 
 _Replace this line. Say which rows you left out and why, and how each figure on the site is defined. "Five things that will bite you" in the description sheet lists the problems to cover._
 
 ## Tools we used
 
-_Replace this line with your AI coding agent or agents, and any libraries and other tools you used._
+Claude Code, an AI coding agent made by Anthropic, wrote and edited the site under the instructions in `AGENTS.md`. The site is plain HTML, CSS and JavaScript, with no framework or build step. Two fonts come from Google Fonts: Source Serif 4 and EB Garamond. Python was used to recompute the medians, price per square foot, day counts and budget figures separately, to check the figures on the page. A headless Chromium browser, driven by Playwright, was used to test the page. GitHub Pages publishes the repository through `.github/workflows/pages.yml`.
 
 ## Citation
 
